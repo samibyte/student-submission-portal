@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  password    String
+  role        Role         @default(STUDENT)
+  createdAt   DateTime     @default(now())
+  submissions Submission[]
+  feedbacks   Feedback[]
+}
+
+model Submission {
+  id          String     @id @default(cuid())
+  projectName String
+  repoUrl     String     @unique // normalized
+  liveUrl     String
+  description String
+  status      Status     @default(PENDING)
+  studentId   String
+  student     User       @relation(fields: [studentId], references: [id])
+  feedbacks   Feedback[]
+  createdAt   DateTime   @default(now())
+  reviewedAt  DateTime?
+
+  @@index([status, createdAt])
+  @@index([studentId])
+}
+
+model Feedback {
+  id           String     @id @default(cuid())
+  comment      String
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  mentorId     String
+  mentor       User       @relation(fields: [mentorId], references: [id])
+  createdAt    DateTime   @default(now())
+}
