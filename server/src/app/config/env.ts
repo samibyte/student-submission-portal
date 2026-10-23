@@ -9,7 +9,6 @@ interface EnvConfig {
 	PORT: string;
 	DATABASE_URL: string;
 	FRONTEND_URL: string;
-	APP_URL: string;
 	BCRYPT_SALT_ROUNDS: string;
 	ACCESS_TOKEN_SECRET: string;
 	REFRESH_TOKEN_SECRET: string;
@@ -24,7 +23,6 @@ const loadEnvVariables = (): EnvConfig => {
 		"NODE_ENV",
 		"DATABASE_URL",
 		"FRONTEND_URL",
-		"APP_URL",
 		"BCRYPT_SALT_ROUNDS",
 		"ACCESS_TOKEN_SECRET",
 		"REFRESH_TOKEN_SECRET",
@@ -47,7 +45,6 @@ const loadEnvVariables = (): EnvConfig => {
 		PORT: process.env.PORT as string,
 		DATABASE_URL: process.env.DATABASE_URL as string,
 		FRONTEND_URL: process.env.FRONTEND_URL as string,
-		APP_URL: process.env.FRONTEND_URL as string,
 		BCRYPT_SALT_ROUNDS: process.env.BCRYPT_SALT_ROUNDS as string,
 		ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET as string,
 		REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET as string,
