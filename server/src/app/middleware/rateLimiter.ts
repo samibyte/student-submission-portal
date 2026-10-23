@@ -28,7 +28,9 @@ export const submissionRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
     // Keyed by user id (set by authenticate middleware); fall back to IP via helper
-    return (req as any).user?.sub ?? ipKeyGenerator(req);
+    const userId = (req as any).user?.sub;
+    if (userId) return userId;
+    return req.ip ? ipKeyGenerator(req.ip) : "anonymous";
   },
   message: makeMessage(
     "You can only submit 5 projects per hour. Please try again later.",
