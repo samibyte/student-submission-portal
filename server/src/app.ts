@@ -33,7 +33,12 @@ app.get("/", (_req: Request, res: Response) => {
   });
 });
 
-// ── Routes (added in steps 2 & 3) ─────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
+import { authRouter } from "./app/modules/auth/auth.routes.js";
+import { submissionsRouter } from "./app/modules/submissions/submissions.routes.js";
+
+app.use("/auth", authRouter);
+app.use("/submissions", submissionsRouter);
 
 // ── Error handling (must be last) ─────────────────────────────────────────────
 app.use(globalErrorHandler);

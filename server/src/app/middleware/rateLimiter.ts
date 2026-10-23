@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import httpStatus from "http-status";
 import type { Request } from "express";
 
@@ -27,9 +27,8 @@ export const submissionRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
-    // req.user is set by the authenticate middleware
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (req as any).user?.sub ?? req.ip ?? "unknown";
+    // Keyed by user id (set by authenticate middleware); fall back to IP via helper
+    return (req as any).user?.sub ?? ipKeyGenerator(req);
   },
   message: makeMessage(
     "You can only submit 5 projects per hour. Please try again later.",
