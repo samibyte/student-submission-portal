@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// ── helpers ────────────────────────────────────────────────────────────────────
+// helpers 
 const githubRepoUrl = z
   .string()
   .regex(
@@ -13,7 +13,7 @@ const httpUrl = z
   .url("liveUrl must be a valid http(s) URL")
   .regex(/^https?:\/\//, "liveUrl must start with http:// or https://");
 
-// ── create submission ──────────────────────────────────────────────────────────
+//  create submission 
 export const createSubmissionSchema = z.object({
   projectName: z
     .string()
@@ -28,7 +28,7 @@ export const createSubmissionSchema = z.object({
     .max(1000, "description must be at most 1000 characters"),
 });
 
-// ── review submission ─────────────────────────────────────────────────────────
+//  review submission
 export const reviewSubmissionSchema = z
   .object({
     status: z.enum(["APPROVED", "REJECTED"]),
@@ -44,7 +44,7 @@ export const reviewSubmissionSchema = z
     }
   });
 
-// ── list query ────────────────────────────────────────────────────────────────
+// list query 
 export const listSubmissionsSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
   page: z.coerce.number().int().min(1).default(1),

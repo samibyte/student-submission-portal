@@ -44,7 +44,7 @@ export const signup = async (input: SignupInput) => {
   return { user, token };
 };
 
-// ── login ──────────────────────────────────────────────────────────────────────
+// login 
 export const login = async (input: LoginInput) => {
   const email = input.email.trim().toLowerCase();
 
