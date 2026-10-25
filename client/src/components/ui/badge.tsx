@@ -12,12 +12,15 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",
         {
-          "bg-gray-100 text-gray-800": variant === "default",
-          "bg-yellow-100 text-yellow-800": variant === "pending",
-          "bg-green-100 text-green-800": variant === "approved",
-          "bg-red-100 text-red-800": variant === "rejected",
+          "bg-muted text-muted-foreground": variant === "default",
+          "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 dark:border dark:border-amber-500/30":
+            variant === "pending",
+          "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border dark:border-emerald-500/30":
+            variant === "approved",
+          "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 dark:border dark:border-rose-500/30":
+            variant === "rejected",
         },
         className,
       )}
