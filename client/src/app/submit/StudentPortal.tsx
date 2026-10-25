@@ -1,14 +1,15 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ExternalLink, RefreshCw } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
+import { Badge, statusVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge, statusVariant } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -17,9 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api";
-import { toast } from "sonner";
-import { ExternalLink, RefreshCw } from "lucide-react";
 
 const submissionSchema = z.object({
   projectName: z
@@ -100,12 +100,12 @@ export function StudentPortal() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (values: SubmissionFormValues) => {
+    mutationFn: async (payload: SubmissionFormValues) => {
       return apiFetch<{ success: boolean; data: Submission; message: string }>(
         "/submissions",
         {
           method: "POST",
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         },
       );
     },
@@ -114,24 +114,41 @@ export function StudentPortal() {
       reset();
       queryClient.invalidateQueries({ queryKey: ["submissions", "mine"] });
     },
-    onError: (err: any) => {
-      if (err?.status === 409) {
+    onError: (err: unknown) => {
+      const error = err as {
+        status?: number;
+        data?: { message?: string; errors?: Record<string, string[]> };
+        message?: string;
+      };
+      const status = error?.status;
+      const data = error?.data;
+
+      if (status === 409) {
         setError("repoUrl", {
           type: "manual",
           message:
-            "This repository URL has already been submitted by another student or project.",
+            data?.message || "This repository URL has already been submitted.",
         });
         toast.error("Duplicate repository URL");
-      } else if (err?.status === 429) {
-        toast.error(
-          err?.data?.message ||
-            "Rate limit reached. You can only submit 5 projects per hour.",
-        );
-      } else if (err?.status === 400 && err?.data?.errors?.length) {
-        toast.error(err.data.errors[0]);
-      } else {
-        toast.error(err?.data?.message || err?.message || "Failed to submit project");
+        return;
       }
+
+      if (status === 400 && data?.errors) {
+        Object.entries(data.errors).forEach(([field, messages]) => {
+          if (Array.isArray(messages) && messages[0]) {
+            setError(field as keyof SubmissionFormValues, {
+              type: "manual",
+              message: messages[0],
+            });
+          }
+        });
+        toast.error("Please fix form errors");
+        return;
+      }
+
+      toast.error(
+        data?.message || error?.message || "Failed to submit project",
+      );
     },
   });
 
@@ -142,12 +159,12 @@ export function StudentPortal() {
   return (
     <div className="space-y-10">
       {/* Submit Form Card */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold tracking-tight text-gray-900">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
             Submit New Project
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Provide details about your project for mentor review
           </p>
         </div>
@@ -163,7 +180,7 @@ export function StudentPortal() {
                 {...register("projectName")}
               />
               {errors.projectName && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {errors.projectName.message}
                 </p>
               )}
@@ -173,12 +190,14 @@ export function StudentPortal() {
               <Label htmlFor="repoUrl">GitHub Repository URL</Label>
               <Input
                 id="repoUrl"
-                placeholder="https://github.com/username/repository"
+                placeholder="https://github.com/username/project"
                 disabled={isSubmitting || createMutation.isPending}
                 {...register("repoUrl")}
               />
               {errors.repoUrl && (
-                <p className="text-xs text-red-500">{errors.repoUrl.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.repoUrl.message}
+                </p>
               )}
             </div>
 
@@ -191,7 +210,9 @@ export function StudentPortal() {
                 {...register("liveUrl")}
               />
               {errors.liveUrl && (
-                <p className="text-xs text-red-500">{errors.liveUrl.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.liveUrl.message}
+                </p>
               )}
             </div>
 
@@ -205,7 +226,7 @@ export function StudentPortal() {
                 {...register("description")}
               />
               {errors.description && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {errors.description.message}
                 </p>
               )}
@@ -226,13 +247,13 @@ export function StudentPortal() {
       </section>
 
       {/* Submissions List Card */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-gray-900">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               My Submissions
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Track your submitted projects and mentor feedback
             </p>
           </div>
@@ -243,21 +264,23 @@ export function StudentPortal() {
             disabled={isLoading}
             className="text-xs"
           >
-            <RefreshCw className={`mr-1 h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`mr-1 h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
 
         {isLoading ? (
           <div className="space-y-3 py-6">
-            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
-            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
-            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
+            <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded bg-muted" />
           </div>
         ) : isError ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-center">
-            <p className="text-sm text-red-600">
-              {(error as any)?.message || "Failed to load submissions"}
+          <div className="rounded-md border border-destructive/20 bg-destructive/10 p-4 text-center">
+            <p className="text-sm text-destructive">
+              {(error as Error)?.message || "Failed to load submissions"}
             </p>
             <Button
               variant="outline"
@@ -269,8 +292,8 @@ export function StudentPortal() {
             </Button>
           </div>
         ) : !submissions || submissions.length === 0 ? (
-          <div className="rounded-md border border-dashed border-gray-200 py-12 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="rounded-md border border-dashed border-border py-12 text-center">
+            <p className="text-sm text-muted-foreground">
               You haven&apos;t submitted any projects yet.
             </p>
           </div>
@@ -291,8 +314,10 @@ export function StudentPortal() {
                   <TableRow key={sub.id}>
                     <TableCell className="align-top font-medium">
                       <div>
-                        <div className="text-gray-900">{sub.projectName}</div>
-                        <div className="text-xs text-gray-500 line-clamp-2 max-w-xs mt-0.5">
+                        <div className="text-foreground font-semibold">
+                          {sub.projectName}
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2 max-w-xs mt-0.5">
                           {sub.description}
                         </div>
                       </div>
@@ -303,7 +328,7 @@ export function StudentPortal() {
                           href={sub.repoUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-blue-600 hover:underline"
+                          className="inline-flex items-center text-primary hover:underline font-medium"
                         >
                           Repository
                           <ExternalLink className="ml-1 h-3 w-3" />
@@ -312,7 +337,7 @@ export function StudentPortal() {
                           href={sub.liveUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-blue-600 hover:underline"
+                          className="inline-flex items-center text-primary hover:underline font-medium"
                         >
                           Live Demo
                           <ExternalLink className="ml-1 h-3 w-3" />
@@ -324,7 +349,7 @@ export function StudentPortal() {
                         {sub.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="align-top text-xs text-gray-500 whitespace-nowrap">
+                    <TableCell className="align-top text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(sub.createdAt).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "short",
@@ -337,10 +362,10 @@ export function StudentPortal() {
                           {sub.feedbacks.map((fb) => (
                             <div
                               key={fb.id}
-                              className="rounded bg-gray-50 p-2 text-xs border border-gray-100"
+                              className="rounded bg-muted/60 p-2 text-xs border border-border"
                             >
-                              <p className="text-gray-800">{fb.comment}</p>
-                              <div className="mt-1 text-[10px] text-gray-400">
+                              <p className="text-foreground">{fb.comment}</p>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
                                 {fb.mentor.name} •{" "}
                                 {new Date(fb.createdAt).toLocaleDateString()}
                               </div>
@@ -348,7 +373,7 @@ export function StudentPortal() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400 italic">
+                        <span className="text-xs text-muted-foreground italic">
                           No feedback yet
                         </span>
                       )}

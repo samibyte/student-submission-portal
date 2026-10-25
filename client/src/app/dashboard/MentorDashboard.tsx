@@ -1,12 +1,33 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  Layers,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { Badge, statusVariant } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -15,24 +36,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api";
-import { toast } from "sonner";
-import {
-  ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Layers,
-} from "lucide-react";
 
 interface Feedback {
   id: string;
@@ -93,7 +98,10 @@ export function MentorDashboard() {
   const currentStatus = STATUS_FILTERS.some((f) => f.value === rawStatus)
     ? rawStatus
     : "PENDING";
-  const currentPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const currentPage = Math.max(
+    1,
+    parseInt(searchParams.get("page") || "1", 10),
+  );
 
   // Review Dialog State
   const [reviewDialog, setReviewDialog] = useState<{
@@ -142,22 +150,28 @@ export function MentorDashboard() {
   } = useQuery<SubmissionsResponse>({
     queryKey: ["submissions", "list", currentStatus, currentPage],
     queryFn: async () => {
-      const queryObj = new URLSearchParams();
+      const query = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "10",
+      });
       if (currentStatus !== "ALL") {
-        queryObj.set("status", currentStatus);
+        query.set("status", currentStatus);
       }
-      queryObj.set("page", currentPage.toString());
-      queryObj.set("limit", "10");
-
       const res = await apiFetch<{
         success: boolean;
         data: Submission[];
-        meta: { page: number; limit: number; total: number; totalPages: number };
-      }>(`/submissions?${queryObj.toString()}`);
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      }>(`/submissions?${query.toString()}`);
 
       return {
         data: res.data,
-        ...res.meta,
+        page: res.page,
+        limit: res.limit,
+        total: res.total,
+        totalPages: res.totalPages,
       };
     },
     placeholderData: keepPreviousData,
@@ -183,15 +197,19 @@ export function MentorDashboard() {
       );
     },
     onSuccess: (res) => {
-      toast.success(res.message || "Submission reviewed successfully");
-      setReviewDialog((prev) => ({ ...prev, isOpen: false, comment: "" }));
-      // Invalidate both list and stats
-      queryClient.invalidateQueries({ queryKey: ["submissions", "list"] });
-      queryClient.invalidateQueries({ queryKey: ["submissions", "stats"] });
+      toast.success(res.message || "Review submitted successfully");
+      setReviewDialog({
+        isOpen: false,
+        submission: null,
+        status: "APPROVED",
+        comment: "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["submissions"] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const error = err as { data?: { message?: string }; message?: string };
       toast.error(
-        err?.data?.message || err?.message || "Failed to submit review",
+        error?.data?.message || error?.message || "Failed to submit review",
       );
     },
   });
@@ -224,16 +242,17 @@ export function MentorDashboard() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header & Stats */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              Mentor Dashboard
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Submissions Management
             </h1>
-            <p className="text-sm text-gray-500">
-              Review and manage incoming student submissions
+            <p className="text-sm text-muted-foreground">
+              Review, filter, and provide feedback on student project
+              submissions
             </p>
           </div>
           <Button
@@ -244,7 +263,7 @@ export function MentorDashboard() {
               refetchList();
             }}
             disabled={isFetching}
-            className="text-xs"
+            className="text-xs self-start sm:self-auto"
           >
             <RefreshCw
               className={`mr-1.5 h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
@@ -255,52 +274,52 @@ export function MentorDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>Total</span>
-              <Layers className="h-4 w-4 text-gray-400" />
+              <Layers className="h-4 w-4 text-muted-foreground/70" />
             </div>
-            <div className="mt-2 text-2xl font-bold text-gray-900">
-              {isStatsLoading ? "..." : stats?.total ?? 0}
+            <div className="mt-2 text-2xl font-bold text-foreground">
+              {isStatsLoading ? "..." : (stats?.total ?? 0)}
             </div>
           </div>
 
-          <div className="rounded-lg border border-yellow-100 bg-yellow-50/50 p-4 shadow-sm">
-            <div className="flex items-center justify-between text-sm text-yellow-700">
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 shadow-sm">
+            <div className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400">
               <span>Pending</span>
-              <Clock className="h-4 w-4 text-yellow-500" />
+              <Clock className="h-4 w-4 text-amber-500" />
             </div>
-            <div className="mt-2 text-2xl font-bold text-yellow-900">
-              {isStatsLoading ? "..." : stats?.pending ?? 0}
+            <div className="mt-2 text-2xl font-bold text-amber-900 dark:text-amber-300">
+              {isStatsLoading ? "..." : (stats?.pending ?? 0)}
             </div>
           </div>
 
-          <div className="rounded-lg border border-green-100 bg-green-50/50 p-4 shadow-sm">
-            <div className="flex items-center justify-between text-sm text-green-700">
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 shadow-sm">
+            <div className="flex items-center justify-between text-sm text-emerald-700 dark:text-emerald-400">
               <span>Approved</span>
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
-            <div className="mt-2 text-2xl font-bold text-green-900">
-              {isStatsLoading ? "..." : stats?.approved ?? 0}
+            <div className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-300">
+              {isStatsLoading ? "..." : (stats?.approved ?? 0)}
             </div>
           </div>
 
-          <div className="rounded-lg border border-red-100 bg-red-50/50 p-4 shadow-sm">
-            <div className="flex items-center justify-between text-sm text-red-700">
+          <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 shadow-sm">
+            <div className="flex items-center justify-between text-sm text-rose-700 dark:text-rose-400">
               <span>Rejected</span>
-              <XCircle className="h-4 w-4 text-red-500" />
+              <XCircle className="h-4 w-4 text-rose-500" />
             </div>
-            <div className="mt-2 text-2xl font-bold text-red-900">
-              {isStatsLoading ? "..." : stats?.rejected ?? 0}
+            <div className="mt-2 text-2xl font-bold text-rose-900 dark:text-rose-300">
+              {isStatsLoading ? "..." : (stats?.rejected ?? 0)}
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter and Table Section */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
         {/* Status Filter Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
           <div className="flex gap-2">
             {STATUS_FILTERS.map((f) => {
               const active = currentStatus === f.value;
@@ -309,10 +328,10 @@ export function MentorDashboard() {
                   key={f.value}
                   type="button"
                   onClick={() => updateParams(f.value, 1)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
                     active
-                      ? "bg-gray-900 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                   }`}
                 >
                   {f.label}
@@ -321,7 +340,7 @@ export function MentorDashboard() {
             })}
           </div>
 
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-muted-foreground">
             {listData ? `Showing ${listData.total} submissions` : ""}
           </div>
         </div>
@@ -329,14 +348,14 @@ export function MentorDashboard() {
         {/* Submissions Table */}
         {isListLoading ? (
           <div className="space-y-3 py-8">
-            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
-            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
-            <div className="h-10 w-full animate-pulse rounded bg-gray-100" />
+            <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded bg-muted" />
           </div>
         ) : isListError ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-6 text-center my-6">
-            <p className="text-sm text-red-600">
-              {(listError as any)?.message || "Failed to load submissions"}
+          <div className="rounded-md border border-destructive/20 bg-destructive/10 p-6 text-center my-6">
+            <p className="text-sm text-destructive">
+              {(listError as Error)?.message || "Failed to load submissions"}
             </p>
             <Button
               variant="outline"
@@ -348,7 +367,7 @@ export function MentorDashboard() {
             </Button>
           </div>
         ) : !listData?.data || listData.data.length === 0 ? (
-          <div className="py-12 text-center text-sm text-gray-500">
+          <div className="py-12 text-center text-sm text-muted-foreground">
             No submissions found for status &quot;{currentStatus}&quot;.
           </div>
         ) : (
@@ -369,18 +388,20 @@ export function MentorDashboard() {
                   <TableRow key={sub.id}>
                     <TableCell className="align-top font-medium">
                       <div>
-                        <div className="text-gray-900">{sub.projectName}</div>
-                        <div className="text-xs text-gray-500 line-clamp-2 max-w-xs mt-0.5">
+                        <div className="text-foreground font-semibold">
+                          {sub.projectName}
+                        </div>
+                        <div className="text-xs text-muted-foreground line-clamp-2 max-w-xs mt-0.5">
                           {sub.description}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="align-top">
                       <div className="text-xs">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-foreground">
                           {sub.student?.name}
                         </div>
-                        <div className="text-gray-400">
+                        <div className="text-muted-foreground">
                           {sub.student?.email}
                         </div>
                       </div>
@@ -391,7 +412,7 @@ export function MentorDashboard() {
                           href={sub.repoUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-blue-600 hover:underline"
+                          className="inline-flex items-center text-primary hover:underline font-medium"
                         >
                           Repository
                           <ExternalLink className="ml-1 h-3 w-3" />
@@ -400,7 +421,7 @@ export function MentorDashboard() {
                           href={sub.liveUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center text-blue-600 hover:underline"
+                          className="inline-flex items-center text-primary hover:underline font-medium"
                         >
                           Live Demo
                           <ExternalLink className="ml-1 h-3 w-3" />
@@ -412,7 +433,7 @@ export function MentorDashboard() {
                         {sub.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="align-top text-xs text-gray-500 whitespace-nowrap">
+                    <TableCell className="align-top text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(sub.createdAt).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "short",
@@ -440,7 +461,7 @@ export function MentorDashboard() {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           Reviewed
                           {sub.reviewedAt
                             ? ` (${new Date(sub.reviewedAt).toLocaleDateString()})`
@@ -457,8 +478,8 @@ export function MentorDashboard() {
 
         {/* Pagination Controls */}
         {listData && listData.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-200 pt-4 mt-4">
-            <div className="text-xs text-gray-500">
+          <div className="flex items-center justify-between border-t border-border pt-4 mt-4">
+            <div className="text-xs text-muted-foreground">
               Page {listData.page} of {listData.totalPages}
             </div>
             <div className="flex items-center gap-2">
@@ -505,11 +526,11 @@ export function MentorDashboard() {
 
           {reviewDialog.submission && (
             <div className="space-y-4 py-2">
-              <div className="rounded-md bg-gray-50 p-3 text-xs border border-gray-100">
-                <div className="font-semibold text-gray-900">
+              <div className="rounded-md bg-muted/50 p-3 text-xs border border-border">
+                <div className="font-semibold text-foreground">
                   {reviewDialog.submission.projectName}
                 </div>
-                <div className="text-gray-500 mt-0.5">
+                <div className="text-muted-foreground mt-0.5">
                   by {reviewDialog.submission.student.name} (
                   {reviewDialog.submission.student.email})
                 </div>
@@ -519,9 +540,9 @@ export function MentorDashboard() {
                 <Label htmlFor="review-comment">
                   Feedback Comment{" "}
                   {reviewDialog.status === "REJECTED" ? (
-                    <span className="text-red-500">* (Required)</span>
+                    <span className="text-destructive">* (Required)</span>
                   ) : (
-                    <span className="text-gray-400 font-normal">
+                    <span className="text-muted-foreground font-normal">
                       (Optional)
                     </span>
                   )}
