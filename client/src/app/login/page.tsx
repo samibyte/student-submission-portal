@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ModeToggle } from "@/components/mode-toggle";
 import { getMe } from "@/lib/auth";
 import { LoginForm } from "./LoginForm";
+import Logo from "@/components/logo";
 
 export default async function LoginPage() {
   const user = await getMe();
@@ -17,9 +18,9 @@ export default async function LoginPage() {
       </div>
       <div className="w-full max-w-md space-y-6 rounded-xl border border-border bg-card p-6 sm:p-8 shadow-sm">
         <div className="space-y-2 text-center">
-          <div className="inline-flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground mb-1 shadow-sm">
-            <GraduationCap className="w-6 h-6" />
-          </div>
+
+          <Logo className="inline-flex size-11 items-center justify-center" />
+ 
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Sign in
           </h1>

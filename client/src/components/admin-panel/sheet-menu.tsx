@@ -9,6 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import Logo from "../logo";
 
 export function SheetMenu() {
   return (
@@ -32,9 +33,7 @@ export function SheetMenu() {
             }
             nativeButton={false}
           >
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <GraduationCap className="w-5 h-5" />
-            </div>
+            <Logo className="inline-flex size-11 items-center justify-center" />
             <SheetTitle className="font-bold text-base text-left leading-tight">
               Project Portal
             </SheetTitle>

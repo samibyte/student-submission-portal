@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useStore } from "@/hooks/use-store";
 import { cn } from "@/lib/utils";
+import Logo from "../logo";
 
 export function Sidebar() {
   const sidebar = useStore(useSidebar, (x) => x);
@@ -46,9 +47,7 @@ export function Sidebar() {
           }
           nativeButton={false}
         >
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shrink-0">
-            <GraduationCap className="w-5 h-5" />
-          </div>
+          <Logo className="inline-flex size-11 items-center justify-center" />
           <div
             className={cn(
               "flex flex-col text-left transition-[transform,opacity,display] ease-in-out duration-300",
