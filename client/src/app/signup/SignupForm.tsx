@@ -81,7 +81,7 @@ export function SignupForm() {
         <Input
           id="name"
           placeholder="Jane Doe"
-          className="text-secondary"
+          className="dark:text-secondary"
           autoComplete="name"
           disabled={isSubmitting}
           {...register("name")}
@@ -96,7 +96,7 @@ export function SignupForm() {
         <Input
           id="email"
           type="email"
-          className="text-secondary"
+          className="dark:text-secondary"
           placeholder="name@example.com"
           autoComplete="email"
           disabled={isSubmitting}
@@ -113,7 +113,7 @@ export function SignupForm() {
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
-            className="pr-10 text-secondary"
+            className="pr-10 dark:text-secondary"
             placeholder="6+ characters, uppercase, number & symbol"
             autoComplete="new-password"
             disabled={isSubmitting}

@@ -175,6 +175,7 @@ export function StudentPortal() {
               <Label htmlFor="projectName">Project Name</Label>
               <Input
                 id="projectName"
+                className="dark:text-secondary"
                 placeholder="e.g. Student Portal Fullstack"
                 disabled={isSubmitting || createMutation.isPending}
                 {...register("projectName")}
@@ -190,6 +191,7 @@ export function StudentPortal() {
               <Label htmlFor="repoUrl">GitHub Repository URL</Label>
               <Input
                 id="repoUrl"
+                className="dark:text-secondary"
                 placeholder="https://github.com/username/project"
                 disabled={isSubmitting || createMutation.isPending}
                 {...register("repoUrl")}
@@ -205,6 +207,7 @@ export function StudentPortal() {
               <Label htmlFor="liveUrl">Live Demo URL</Label>
               <Input
                 id="liveUrl"
+                className="dark:text-secondary"
                 placeholder="https://my-demo-app.vercel.app"
                 disabled={isSubmitting || createMutation.isPending}
                 {...register("liveUrl")}
@@ -220,6 +223,7 @@ export function StudentPortal() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                className="text-secondary"
                 placeholder="Describe features, technologies used, and testing instructions (20 - 1000 characters)..."
                 rows={4}
                 disabled={isSubmitting || createMutation.isPending}
@@ -299,10 +303,10 @@ export function StudentPortal() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table>
+            <Table  className="text-primary">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Project</TableHead>
+                  <TableHead >Project</TableHead>
                   <TableHead>Links</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>

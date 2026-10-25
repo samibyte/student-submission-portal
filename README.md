@@ -73,7 +73,7 @@ cp .env.example .env
 # Push schema to database and generate client
 bunx --bun prisma db push
 
-# Seed the mentor account
+# Seed demo accounts for both roles
 bun prisma/seed.ts
 
 # Start backend development server (runs on http://localhost:5000)
@@ -109,6 +109,8 @@ Visit **`http://localhost:3000`** in your browser.
 | `JWT_EXPIRES_IN` | Token duration | `1d` |
 | `SEED_MENTOR_EMAIL` | Default mentor email for seed | `mentor@example.com` |
 | `SEED_MENTOR_PASSWORD` | Default mentor password for seed | `Mentor@123` |
+| `SEED_STUDENT_EMAIL` | Default student email for seed | `student@example.com` |
+| `SEED_STUDENT_PASSWORD` | Default student password for seed | `Student@123` |
 
 ### Client (`client/.env.local` - optional)
 | Variable | Description | Default |
@@ -117,15 +119,17 @@ Visit **`http://localhost:3000`** in your browser.
 
 ---
 
-## Seeded Mentor Login
+## Demo Logins
 
-Use these credentials to log in as a mentor:
+The login page includes a demo button for each role. Seed the demo users with
+`bun prisma/seed.ts` from the `server` directory, then use the defaults below:
 
-- **Email:** `mentor@example.com`
-- **Password:** `Mentor@123`
-- **Role:** `MENTOR` (accesses `/dashboard`)
+- **Student:** `student@example.com` / `Student@123` (accesses `/submit`)
+- **Mentor:** `mentor@example.com` / `Mentor@123` (accesses `/dashboard`)
 
-To create student accounts, navigate to `/signup` on the frontend. All self-registered users are automatically assigned the `STUDENT` role and redirected to `/submit`.
+These defaults can be changed with the `SEED_STUDENT_*` and `SEED_MENTOR_*`
+environment variables. To create a separate student account, navigate to
+`/signup`; all self-registered users are assigned the `STUDENT` role.
 
 ---
 

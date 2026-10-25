@@ -550,6 +550,7 @@ export function MentorDashboard() {
                 <Textarea
                   id="review-comment"
                   rows={4}
+                  className="dark:text-secondary"
                   placeholder={
                     reviewDialog.status === "REJECTED"
                       ? "Explain why the project is being rejected and what changes are required..."
