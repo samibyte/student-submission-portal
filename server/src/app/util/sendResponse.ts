@@ -23,4 +23,4 @@ export const sendResponse = <T>(res: Response, data: TResponseData<T>) => {
 		data: data.data,
 		meta: data.meta,
 	});
-};
+};``

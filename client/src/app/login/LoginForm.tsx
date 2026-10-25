@@ -1,16 +1,17 @@
 "use client";
 
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api";
-import { toast } from "sonner";
-import { useState } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -22,6 +23,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -40,7 +42,12 @@ export function LoginForm() {
     try {
       const res = await apiFetch<{
         success: boolean;
-        data: { id: string; name: string; email: string; role: "STUDENT" | "MENTOR" };
+        data: {
+          id: string;
+          name: string;
+          email: string;
+          role: "STUDENT" | "MENTOR";
+        };
         message: string;
       }>("/auth/login", {
         method: "POST",
@@ -51,8 +58,10 @@ export function LoginForm() {
       const target = res.data.role === "MENTOR" ? "/dashboard" : "/submit";
       router.push(target);
       router.refresh();
-    } catch (err: any) {
-      const msg = err?.data?.message || err?.message || "Invalid credentials";
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
+      const msg =
+        error?.data?.message || error?.message || "Invalid credentials";
       setServerError(msg);
       toast.error(msg);
     }
@@ -61,7 +70,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {serverError && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
           {serverError}
         </div>
       )}
@@ -71,28 +80,46 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
+          className="text-secondary"
           placeholder="name@example.com"
           autoComplete="email"
           disabled={isSubmitting}
           {...register("email")}
         />
         {errors.email && (
-          <p className="text-xs text-red-500">{errors.email.message}</p>
+          <p className="text-xs text-destructive">{errors.email.message}</p>
         )}
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          disabled={isSubmitting}
-          {...register("password")}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            className="pr-10 text-secondary"
+            type={showPassword ? "text" : "password"}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            disabled={isSubmitting}
+            {...register("password")}
+          />
+          <button
+            type="button"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            disabled={isSubmitting}
+            onClick={() => setShowPassword((visible) => !visible)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {showPassword ? (
+              <EyeOff className="text-secondary" aria-hidden="true" size={18} />
+            ) : (
+              <Eye className="text-secondary" aria-hidden="true" size={18} />
+            )}
+          </button>
+        </div>
         {errors.password && (
-          <p className="text-xs text-red-500">{errors.password.message}</p>
+          <p className="text-xs text-destructive">{errors.password.message}</p>
         )}
       </div>
 
@@ -100,11 +127,11 @@ export function LoginForm() {
         {isSubmitting ? "Signing in..." : "Sign in"}
       </Button>
 
-      <div className="text-center text-sm text-gray-500">
+      <div className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-gray-900 underline underline-offset-4 hover:text-gray-700"
+          className="font-medium text-foreground underline underline-offset-4 hover:text-primary transition-colors"
         >
           Sign up
         </Link>
